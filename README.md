@@ -39,34 +39,46 @@ These flexible configurations ensure Excalidraw Complete fits seamlessly into yo
 
 Interested in contributing or customizing? Build Excalidraw Complete from source with these steps:
 
+### Using Docker (Recommended)
+
+```bash
+# Clone the repository with submodules
+git clone https://github.com/PatWie/excalidraw-complete.git --recursive
+cd excalidraw-complete
+
+# Build the Docker image (includes frontend and backend)
+docker build -t excalidraw-complete -f excalidraw-complete.Dockerfile .
+
+# Run the container
+docker run -p 3002:3002 excalidraw-complete
+```
+
+### Manual Build
+
 ```bash
 # Clone and prepare the Excalidraw frontend
 git clone https://github.com/PatWie/excalidraw-complete.git --recursive
 cd ./excalidraw-complete/excalidraw
 
-# git checkout tags/v0.17.3
-# Fix docker build (fix already implemented upstream)
-# git remote add jcobol https://github.com/jcobol/excalidraw
-# git fetch jcobol
-# git checkout 7582_fix_docker_build
-
-# Adjust URLs inside of frontend.patch if you want to use a reverse proxy
+# Apply frontend patches
 git apply ../frontend.patch
-cd ../
-git checkout dev
-docker build -t exalidraw-ui-build excalidraw -f ui-build.Dockerfile
-docker run -v ${PWD}/:/pwd/ -it exalidraw-ui-build cp -r /frontend /pwd
+
+# Build frontend
+npm install
+cd excalidraw-app
+npm run build:app:docker
+cd ../../
+
+# Copy frontend build to correct location
+cp -r excalidraw/excalidraw-app/build frontend/
+
+# Build Go application
+go build -o excalidraw-complete main.go
 ```
 
 (Optional) Replace `localhost:3002` inside of `main.go` with your domain name if you want to use a reverse proxy
 (Optional) Replace `"ssl=!0", "ssl=0"` with `"ssl=!0", "ssl=1"` if you want to use HTTPS
 (Optional) Replace `"ssl:!0", "ssl:0"` with `"ssl:!0", "ssl:1"` if you want to use HTTPS
-
-Compile the Go application:
-
-```bash
-go build -o excalidraw-complete main.go
-```
 
 Declare environment variables if you want any (see section above)
 Example: `STORAGE_TYPE=sqlite DATA_SOURCE_NAME=/tmp/excalidb.sqlite`
