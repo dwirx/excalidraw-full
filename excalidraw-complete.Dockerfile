@@ -1,16 +1,10 @@
 # 前端构建阶段
 FROM node:18 AS frontend-builder
 WORKDIR /app
-# 安装 patch 工具
-RUN apt-get update && apt-get install -y patch
 # 复制 excalidraw 子模块
 COPY excalidraw/ ./excalidraw/
-# 复制补丁文件
-COPY frontend.patch ./
-# 应用前端补丁
-RUN cd excalidraw && patch -p1 < ../frontend.patch
 # 构建前端
-RUN cd excalidraw && npm install && cd excalidraw-app && npm run build:app:docker
+RUN cd excalidraw && pnpm install && cd excalidraw-app && pnpm build:app:docker
 
 # 后端构建阶段
 FROM golang:alpine AS backend-builder

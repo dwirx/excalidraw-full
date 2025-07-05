@@ -93,9 +93,6 @@ importers:
       http-server:
         specifier: 14.1.1
         version: 14.1.1
-      husky:
-        specifier: 7.0.4
-        version: 7.0.4
       jsdom:
         specifier: 22.1.0
         version: 22.1.0
@@ -4418,11 +4415,6 @@ packages:
   human-signals@5.0.0:
     resolution: {integrity: sha512-AXcZb6vzzrFAUE61HnN4mpLqd/cSIwNQjtNWR0euPm6y0iqx3G4gOXaIDdtdDwZmhwe82LA6+zinmW4UBWVePQ==}
     engines: {node: '>=16.17.0'}
-
-  husky@7.0.4:
-    resolution: {integrity: sha512-vbaCKN2QLtP/vD4yvs6iz6hBEo6wkSzs8HpRah1Z6aGmF2KW5PdYuAd7uX5a+OyBZHBhd+TFLqgjUgytQr4RvQ==}
-    engines: {node: '>=12'}
-    hasBin: true
 
   i18next-browser-languagedetector@6.1.4:
     resolution: {integrity: sha512-wukWnFeU7rKIWT66VU5i8I+3Zc4wReGcuDK2+kuFhtoxBRGWGdvYI9UQmqNL/yQH1KogWwh+xGEaIPH8V/i2Zg==}
@@ -12646,8 +12638,6 @@ snapshots:
   human-signals@2.1.0: {}
 
   human-signals@5.0.0: {}
-
-  husky@7.0.4: {}
 
   i18next-browser-languagedetector@6.1.4:
     dependencies:
