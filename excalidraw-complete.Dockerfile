@@ -4,7 +4,7 @@ WORKDIR /app
 # 复制 excalidraw 子模块
 COPY excalidraw/ ./excalidraw/
 # 构建前端
-RUN cd excalidraw && pnpm install && cd excalidraw-app && pnpm build:app:docker
+RUN cd excalidraw && npm install -g pnpm && pnpm install && cd excalidraw-app && pnpm build:app:docker
 
 # 后端构建阶段
 FROM golang:alpine AS backend-builder
