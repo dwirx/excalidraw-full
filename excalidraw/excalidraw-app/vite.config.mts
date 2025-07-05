@@ -51,17 +51,19 @@ export default defineConfig({
   },
   plugins: [
     react(),
-    checker({
-      typescript: true,
-      eslint:
-        envVars.VITE_APP_ENABLE_ESLINT === "false"
-          ? undefined
-          : { lintCommand: 'eslint "./**/*.{js,ts,tsx}"' },
-      overlay: {
-        initialIsOpen: envVars.VITE_APP_COLLAPSE_OVERLAY === "false",
-        badgeStyle: "margin-bottom: 4rem; margin-left: 1rem",
-      },
-    }),
+    process.env.DISABLE_VITE_CHECKER
+      ? undefined
+      : checker({
+          typescript: true,
+          eslint:
+            envVars.VITE_APP_ENABLE_ESLINT === "false"
+              ? undefined
+              : { lintCommand: 'eslint "./**/*.{js,ts,tsx}"' },
+          overlay: {
+            initialIsOpen: envVars.VITE_APP_COLLAPSE_OVERLAY === "false",
+            badgeStyle: "margin-bottom: 4rem; margin-left: 1rem",
+          },
+        }),
     svgrPlugin(),
     ViteEjsPlugin(),
     VitePWA({
