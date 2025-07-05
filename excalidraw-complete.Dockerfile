@@ -12,13 +12,13 @@ RUN apk update && apk add --no-cache git
 WORKDIR /app
 # 复制 Go 模块文件
 COPY go.mod go.sum ./
-RUN GOPROXY=direct go mod download
+RUN go mod download
 # 复制源代码
 COPY . .
 # 复制前端构建文件到正确位置，以便 Go embed 可以找到
 COPY --from=frontend-builder /app/excalidraw/excalidraw-app/build ./frontend/
 # 构建 Go 应用
-RUN GOPROXY=direct CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o main .
 
 # 最终运行镜像
 FROM alpine:latest
