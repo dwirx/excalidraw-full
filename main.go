@@ -45,33 +45,48 @@ type (
 //go:embed all:frontend
 var assets embed.FS
 
-func handleUI() http.Handler {
+func handleUI() http.HandlerFunc {
 	sub, err := fs.Sub(assets, "frontend")
 	if err != nil {
 		panic(err)
 	}
-	// Let's hot-patch all calls to firebase DB
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		originalPath := r.URL.Path
-		originalPath = strings.TrimPrefix(originalPath, "/")
 
-		// Redirect "/" to "index.html"
-		if originalPath == "" {
-			originalPath = "index.html"
+	return func(w http.ResponseWriter, r *http.Request) {
+		path := r.URL.Path
+		// If the path is empty, it means it's the root, so serve index.html
+		if path == "/" || path == "" {
+			path = "/index.html"
 		}
 
-		file, err := sub.Open(originalPath)
+		// Check if the file exists in the embedded filesystem.
+		f, err := sub.Open(strings.TrimPrefix(path, "/"))
 		if err != nil {
+			// If the file does not exist, and it's not a request for a static asset (like .js, .css),
+			// then it's likely a client-side route. In that case, we should serve the index.html
+			// and let the client-side router handle it.
+			if os.IsNotExist(err) && !strings.Contains(path, ".") {
+				path = "/index.html"
+				f, err = sub.Open("index.html")
+			} else {
+				// It's a genuine 404 for a missing asset.
+				http.NotFound(w, r)
+				return
+			}
+		}
+
+		if err != nil {
+			// If we still have an error, something is wrong.
 			http.Error(w, "File not found", http.StatusNotFound)
 			return
 		}
-		defer file.Close()
+		defer f.Close()
 
-		fileContent, err := io.ReadAll(file)
+		fileContent, err := io.ReadAll(f)
 		if err != nil {
 			http.Error(w, "Error reading file", http.StatusInternalServerError)
 			return
 		}
+
 		modifiedContent := strings.ReplaceAll(string(fileContent), "firestore.googleapis.com", "localhost:3002")
 		modifiedContent = strings.ReplaceAll(modifiedContent, "ssl=!0", "ssl=0")
 		modifiedContent = strings.ReplaceAll(modifiedContent, "ssl:!0", "ssl:0")
@@ -79,19 +94,19 @@ func handleUI() http.Handler {
 		// Set the correct Content-Type based on the file extension
 		contentType := http.DetectContentType([]byte(modifiedContent))
 		switch {
-		case strings.HasSuffix(originalPath, ".js"):
+		case strings.HasSuffix(path, ".js"):
 			contentType = "application/javascript"
-		case strings.HasSuffix(originalPath, ".html"):
+		case strings.HasSuffix(path, ".html"):
 			contentType = "text/html"
-		case strings.HasSuffix(originalPath, ".css"):
+		case strings.HasSuffix(path, ".css"):
 			contentType = "text/css"
-		case strings.HasSuffix(originalPath, ".wasm"):
+		case strings.HasSuffix(path, ".wasm"):
 			contentType = "application/wasm"
-		case strings.HasSuffix(originalPath, ".tsx"):
+		case strings.HasSuffix(path, ".tsx"):
 			contentType = "text/typescript"
-		case strings.HasSuffix(originalPath, ".png"):
+		case strings.HasSuffix(path, ".png"):
 			contentType = "image/png"
-		case strings.HasSuffix(originalPath, ".woff2"):
+		case strings.HasSuffix(path, ".woff2"):
 			contentType = "font/woff2"
 		}
 
@@ -102,8 +117,7 @@ func handleUI() http.Handler {
 			http.Error(w, "Error serving file", http.StatusInternalServerError)
 			return
 		}
-		return
-	})
+	}
 }
 
 func setupRouter(store stores.Store) *chi.Mux {
@@ -295,7 +309,7 @@ func main() {
 
 	ioo := setupSocketIO()
 	r.Mount("/socket.io/", ioo.ServeHandler(nil))
-	r.Mount("/", handleUI())
+	r.NotFound(handleUI())
 
 	logrus.WithField("addr", *listenAddress).Info("starting server")
 	go func() {
