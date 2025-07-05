@@ -2,3 +2,9 @@ dist/
 frontend/
 !frontend/.keep
 excalidraw-complete
+*/node_modules
+*/dist
+node_modules
+.env
+*.env
+*/*.env

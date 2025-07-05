@@ -3,9 +3,12 @@ package main
 import (
 	"embed"
 	_ "embed"
-	"excalidraw-complete/core"
 	"excalidraw-complete/handlers/api/documents"
 	"excalidraw-complete/handlers/api/firebase"
+	"excalidraw-complete/handlers/api/kv"
+	"excalidraw-complete/handlers/api/openai"
+	"excalidraw-complete/handlers/auth"
+	authMiddleware "excalidraw-complete/middleware"
 	"excalidraw-complete/stores"
 	"flag"
 	"fmt"
@@ -17,11 +20,11 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/sirupsen/logrus"
-
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/joho/godotenv"
+	"github.com/sirupsen/logrus"
 	"github.com/zishang520/engine.io/v2/types"
 	"github.com/zishang520/engine.io/v2/utils"
 	socketio "github.com/zishang520/socket.io/v2/socket"
@@ -103,7 +106,7 @@ func handleUI() http.Handler {
 	})
 }
 
-func setupRouter(documentStore core.DocumentStore) *chi.Mux {
+func setupRouter(store stores.Store) *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Logger)
 
@@ -121,13 +124,37 @@ func setupRouter(documentStore core.DocumentStore) *chi.Mux {
 	})
 
 	r.Route("/api/v2", func(r chi.Router) {
-		r.Post("/post/", documents.HandleCreate(documentStore))
+		// Route for canvases, protected by JWT auth
+		r.Group(func(r chi.Router) {
+			r.Use(authMiddleware.AuthJWT)
+			r.Route("/kv", func(r chi.Router) {
+				r.Get("/", kv.HandleListCanvases(store))
+				r.Route("/{key}", func(r chi.Router) {
+					r.Get("/", kv.HandleGetCanvas(store))
+					r.Put("/", kv.HandleSaveCanvas(store))
+					r.Delete("/", kv.HandleDeleteCanvas(store))
+				})
+			})
+			r.Route("/chat", func(r chi.Router) {
+				r.Post("/completions", openai.HandleChatCompletion())
+			})
+		})
+
+		// Old routes for anonymous document sharing
+		r.Post("/post/", documents.HandleCreate(store))
 		r.Route("/{id}", func(r chi.Router) {
-			r.Get("/", documents.HandleGet(documentStore))
+			r.Get("/", documents.HandleGet(store))
 		})
 	})
+
+	r.Route("/auth/github", func(r chi.Router) {
+		r.Get("/login", auth.HandleGitHubLogin)
+		r.Get("/callback", auth.HandleGitHubCallback)
+	})
+
 	return r
 }
+
 func setupSocketIO() *socketio.Server {
 	opts := socketio.DefaultServerOptions()
 	opts.SetMaxHttpBufferSize(5000000)
@@ -242,39 +269,41 @@ func waitForShutdown(ioo *socketio.Server) {
 }
 
 func main() {
-	// Define a log level flag
-	logLevel := flag.String("loglevel", "info", "Set the logging level: debug, info, warn, error, fatal, panic")
-    listenAddr := flag.String("listen", ":3002", "Set the server listen address")
+	// Load .env file
+	if err := godotenv.Load(); err != nil {
+		logrus.Info("No .env file found")
+	}
+
+	listenAddress := flag.String("listen", ":3002", "The address to listen on.")
+	logLevel := flag.String("loglevel", "info", "The log level (debug, info, warn, error).")
 	flag.Parse()
 
-	// Set the log level
 	level, err := logrus.ParseLevel(*logLevel)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "Invalid log level: %v\n", err)
-		os.Exit(1)
+		logrus.Fatalf("Invalid log level: %v", err)
 	}
 	logrus.SetLevel(level)
-
-	documentStore := stores.GetStore() // Make sure this is well-defined in your "stores" package
-	r := setupRouter(documentStore)
-	ioo := setupSocketIO()
-	r.Handle("/socket.io/", ioo.ServeHandler(nil))
-	r.Get("/ping", func(w http.ResponseWriter, _ *http.Request) {
-		_, err := w.Write([]byte("pong"))
-		if err != nil {
-			panic(err)
-		}
+	logrus.SetFormatter(&logrus.TextFormatter{
+		FullTimestamp: true,
 	})
+
+	auth.Init()
+	openai.Init()
+	store := stores.GetStore()
+
+	r := setupRouter(store)
+
+	ioo := setupSocketIO()
+	r.Mount("/socket.io/", ioo.ServeHandler(nil))
 	r.Mount("/", handleUI())
 
-	logrus.WithField("addr", *listenAddr).Info("starting server")
+	logrus.WithField("addr", *listenAddress).Info("starting server")
 	go func() {
-		if err := http.ListenAndServe(*listenAddr, r); err != nil {
+		if err := http.ListenAndServe(*listenAddress, r); err != nil {
 			logrus.WithField("event", "start server").Fatal(err)
 		}
 	}()
 
 	logrus.Debug("Server is running in the background")
 	waitForShutdown(ioo)
-
 }
