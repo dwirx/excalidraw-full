@@ -7,7 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: excalidraw-complete
+  IMAGE_NAME: excalidraw-full
   OWNER: betterandbetterii
 
 jobs:
