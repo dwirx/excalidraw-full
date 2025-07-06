@@ -76,6 +76,7 @@ export default defineConfig({
       workbox: {
         // Don't push fonts and locales to app precache
         globIgnores: ["fonts.css", "**/locales/**", "service-worker.js"],
+        navigateFallbackDenylist: [/^\/api/, /^\/auth/],
         runtimeCaching: [
           {
             urlPattern: new RegExp("/.+.(ttf|woff2|otf)"),
