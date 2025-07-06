@@ -7,3 +7,4 @@ excalidraw-complete
 node_modules
 .env
 *.env
+*/build/*
