@@ -12,8 +12,6 @@ export const FILE_UPLOAD_MAX_BYTES = 3 * 1024 * 1024; // 3 MiB
 // 1 year (https://stackoverflow.com/a/25201898/927631)
 export const FILE_CACHE_MAX_AGE_SEC = 31536000;
 
-export const CREATIONS_SIDEBAR_NAME = "creations";
-
 export const WS_EVENTS = {
   SERVER_VOLATILE: "server-volatile-broadcast",
   SERVER: "server-broadcast",
@@ -42,6 +40,7 @@ export const STORAGE_KEYS = {
   LOCAL_STORAGE_APP_STATE: "excalidraw-state",
   LOCAL_STORAGE_COLLAB: "excalidraw-collab",
   LOCAL_STORAGE_THEME: "excalidraw-theme",
+  LOCAL_STORAGE_DEBUG: "excalidraw-debug",
   VERSION_DATA_STATE: "version-dataState",
   VERSION_FILES: "version-files",
 

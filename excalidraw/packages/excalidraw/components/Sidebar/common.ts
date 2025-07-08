@@ -1,5 +1,7 @@
 import React from "react";
-import { AppState, SidebarName, SidebarTabName } from "../../types";
+
+import type { AppState, SidebarName, SidebarTabName } from "../../types";
+import type { JSX } from "react";
 
 export type SidebarTriggerProps = {
   name: SidebarName;
@@ -25,7 +27,6 @@ export type SidebarProps<P = {}> = {
   onDock?: (docked: boolean) => void;
   docked?: boolean;
   className?: string;
-  position?: "left" | "right";
   // NOTE sidebars we use internally inside the editor must have this flag set.
   // It indicates that this sidebar should have lower precedence over host
   // sidebars, if both are open.

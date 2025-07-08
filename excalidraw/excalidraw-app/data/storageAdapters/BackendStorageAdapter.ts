@@ -7,7 +7,6 @@ import {
 } from "../storage";
 import { nanoid } from "nanoid";
 import { jwtDecode } from "jwt-decode";
-import { generateThumbnail } from "../thumbnail";
 
 export class AuthError extends Error {
   constructor(message: string) {
@@ -65,8 +64,19 @@ export class BackendStorageAdapter implements IStorageAdapter {
       }
       throw new Error(`Failed to list canvases: ${response.statusText}`);
     }
-    const canvases: CanvasMetadata[] = await response.json();
-    return canvases;
+    // Backend doesn't send userId, so we enrich the data here.
+    const canvases: Omit<CanvasMetadata, "userId">[] = await response.json();
+    const token = localStorage.getItem("token");
+    if (!token) {
+      return [];
+    }
+    const userId = getUserIdFromJwt(token);
+    if (!userId) {
+      console.error("Could not determine userId from token.");
+      return [];
+    }
+
+    return canvases.map((canvas) => ({ ...canvas, userId }));
   }
 
   async loadCanvas(id: string): Promise<CanvasData | null> {
@@ -88,21 +98,7 @@ export class BackendStorageAdapter implements IStorageAdapter {
   }
 
   async saveCanvas(id: string, data: CanvasData): Promise<void> {
-    let dataForUpload: CanvasData;
-    if (data.thumbnail) {
-      dataForUpload = data;
-    } else {
-      const thumbnail = await generateThumbnail(
-        data.elements,
-        data.appState,
-        data.files,
-      );
-      dataForUpload = {
-        ...data,
-        thumbnail: data.elements.length > 0 ? thumbnail : undefined,
-      };
-    }
-    const saveData = dehydrateCanvasData(dataForUpload);
+    const saveData = dehydrateCanvasData(data);
 
     const response = await fetch(`${API_BASE_URL}/${id}`, {
       method: "PUT",
@@ -127,24 +123,14 @@ export class BackendStorageAdapter implements IStorageAdapter {
     if (!userId) {
       throw new Error("Could not parse user ID from token.");
     }
-    const thumbnail = await generateThumbnail(
-      data.elements,
-      data.appState,
-      data.files,
-    );
-    const dataWithThumbnail: CanvasData = {
-      ...data,
-      thumbnail: data.elements.length > 0 ? thumbnail : undefined,
-    };
 
-    await this.saveCanvas(newId, dataWithThumbnail);
+    await this.saveCanvas(newId, data);
     return {
       id: newId,
       name: data.appState?.name || "Untitled",
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       userId,
-      thumbnail: dataWithThumbnail.thumbnail,
     };
   }
 

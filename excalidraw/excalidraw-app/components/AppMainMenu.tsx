@@ -1,145 +1,87 @@
-import React from "react";
-import { MainMenu } from "../../packages/excalidraw/index";
-import { LanguageList } from "./LanguageList";
-import { useAtom, useSetAtom } from "jotai";
-import { userAtom, saveAsDialogAtom } from "../app-jotai";
 import {
-  GithubIcon,
-  saveAs,
-  extraToolsIcon,
-} from "../../packages/excalidraw/components/icons";
-import DropdownMenuItemLink from "../../packages/excalidraw/components/dropdownMenu/DropdownMenuItemLink";
-import { useI18n } from "../../packages/excalidraw/i18n";
+  loginIcon,
+  ExcalLogo,
+  eyeIcon,
+} from "@excalidraw/excalidraw/components/icons";
+import { MainMenu } from "@excalidraw/excalidraw/index";
+import React from "react";
+
+import { isDevEnv } from "@excalidraw/common";
+
+import type { Theme } from "@excalidraw/element/types";
+
+import { LanguageList } from "../app-language/LanguageList";
+import { isExcalidrawPlusSignedUser } from "../app_constants";
+
+import { saveDebugState } from "./DebugCanvas";
 
 export const AppMainMenu: React.FC<{
   onCollabDialogOpen: () => any;
   isCollaborating: boolean;
   isCollabEnabled: boolean;
-  onStorageSettingsClick: () => void;
+  theme: Theme | "system";
+  setTheme: (theme: Theme | "system") => void;
+  refresh: () => void;
 }> = React.memo((props) => {
-  const [user, setUser] = useAtom(userAtom);
-  const { t } = useI18n();
-  const setSaveAsDialog = useSetAtom(saveAsDialogAtom);
-
-  const handleLogin = () => {
-    window.location.href = "/auth/github/login";
-  };
-
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    setUser(null);
-    window.location.reload(); // Reload to clear all state
-  };
-
   return (
     <MainMenu>
       <MainMenu.DefaultItems.LoadScene />
       <MainMenu.DefaultItems.SaveToActiveFile />
-      <MainMenu.Item
-        onSelect={() => setSaveAsDialog({ isOpen: true })}
-        icon={saveAs}
-      >
-        Save as New Canvas...
-      </MainMenu.Item>
       <MainMenu.DefaultItems.Export />
+      <MainMenu.DefaultItems.SaveAsImage />
       {props.isCollabEnabled && (
         <MainMenu.DefaultItems.LiveCollaborationTrigger
           isCollaborating={props.isCollaborating}
           onSelect={() => props.onCollabDialogOpen()}
         />
       )}
-
+      <MainMenu.DefaultItems.CommandPalette className="highlighted" />
+      <MainMenu.DefaultItems.SearchMenu />
       <MainMenu.DefaultItems.Help />
       <MainMenu.DefaultItems.ClearCanvas />
       <MainMenu.Separator />
-      <MainMenu.Item
-        onSelect={props.onStorageSettingsClick}
-        icon={extraToolsIcon}
+      <MainMenu.ItemLink
+        icon={ExcalLogo}
+        href={`${
+          import.meta.env.VITE_APP_PLUS_LP
+        }/plus?utm_source=excalidraw&utm_medium=app&utm_content=hamburger`}
+        className=""
       >
-        Data Source Settings...
-      </MainMenu.Item>
-      <MainMenu.Separator />
-      {user ? (
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: "0.5rem",
-            padding: "0 0.5rem",
-            width: "100%",
-            fontSize: "14px",
+        Excalidraw+
+      </MainMenu.ItemLink>
+      <MainMenu.DefaultItems.Socials />
+      <MainMenu.ItemLink
+        icon={loginIcon}
+        href={`${import.meta.env.VITE_APP_PLUS_APP}${
+          isExcalidrawPlusSignedUser ? "" : "/sign-up"
+        }?utm_source=signin&utm_medium=app&utm_content=hamburger`}
+        className="highlighted"
+      >
+        {isExcalidrawPlusSignedUser ? "Sign in" : "Sign up"}
+      </MainMenu.ItemLink>
+      {isDevEnv() && (
+        <MainMenu.Item
+          icon={eyeIcon}
+          onClick={() => {
+            if (window.visualDebug) {
+              delete window.visualDebug;
+              saveDebugState({ enabled: false });
+            } else {
+              window.visualDebug = { data: [] };
+              saveDebugState({ enabled: true });
+            }
+            props?.refresh();
           }}
         >
-          <div
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "0.5rem",
-              overflow: "hidden",
-              flexShrink: 1,
-            }}
-          >
-            <img
-              src={user.avatarUrl}
-              alt={user.login}
-              style={{
-                width: "24px",
-                height: "24px",
-                borderRadius: "50%",
-                flexShrink: 0,
-              }}
-            />
-            <span
-              style={{
-                whiteSpace: "nowrap",
-                overflow: "hidden",
-                textOverflow: "ellipsis",
-              }}
-            >
-              {user.name || user.login}
-            </span>
-          </div>
-          <button
-            onClick={handleLogout}
-            style={{
-              background: "transparent",
-              border: "none",
-              cursor: "pointer",
-              padding: "0.25rem 0.5rem",
-              borderRadius: "4px",
-              textAlign: "center",
-              color: "inherit",
-              flexShrink: 0,
-              marginRight: "1rem",
-              font: "var(--ui-font)",
-              fontSize: "14px",
-            }}
-            onMouseOver={(e) =>
-              (e.currentTarget.style.background = "var(--button-gray-1)")
-            }
-            onMouseOut={(e) =>
-              (e.currentTarget.style.background = "transparent")
-            }
-          >
-            Logout
-          </button>
-        </div>
-      ) : (
-        <MainMenu.Item onSelect={handleLogin} icon={GithubIcon}>
-          Login with GitHub
+          Visual Debug
         </MainMenu.Item>
       )}
       <MainMenu.Separator />
-      <DropdownMenuItemLink
-        icon={GithubIcon}
-        href="https://github.com/excalidraw/excalidraw"
-        aria-label="GitHub"
-      >
-        GitHub
-      </DropdownMenuItemLink>
-      <MainMenu.Separator />
-      <MainMenu.DefaultItems.ToggleTheme />
+      <MainMenu.DefaultItems.ToggleTheme
+        allowSystemTheme
+        theme={props.theme}
+        onSelect={props.setTheme}
+      />
       <MainMenu.ItemCustom>
         <LanguageList style={{ width: "100%" }} />
       </MainMenu.ItemCustom>

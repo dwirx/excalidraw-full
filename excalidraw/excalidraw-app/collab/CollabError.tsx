@@ -1,39 +1,35 @@
-import { Tooltip } from "../../packages/excalidraw/components/Tooltip";
-import { warning } from "../../packages/excalidraw/components/icons";
+import { Tooltip } from "@excalidraw/excalidraw/components/Tooltip";
+import { warning } from "@excalidraw/excalidraw/components/icons";
 import clsx from "clsx";
 import { useEffect, useRef, useState } from "react";
 
-import "./CollabError.scss";
-import { atom } from "jotai";
+import { atom } from "../app-jotai";
 
-export type ErrorIndicator = {
+import "./CollabError.scss";
+
+type ErrorIndicator = {
   message: string | null;
   /** used to rerun the useEffect responsible for animation */
   nonce: number;
 };
 
-const _collabErrorIndicatorAtom = atom<ErrorIndicator>({
+export const collabErrorIndicatorAtom = atom<ErrorIndicator>({
   message: null,
   nonce: 0,
 });
 
-export const collabErrorIndicatorAtom = atom(
-  (get) => get(_collabErrorIndicatorAtom),
-  (get, set, update: ErrorIndicator) => set(_collabErrorIndicatorAtom, update),
-);
-
 const CollabError = ({ collabError }: { collabError: ErrorIndicator }) => {
   const [isAnimating, setIsAnimating] = useState(false);
-  const clearAnimationRef = useRef<string | number | NodeJS.Timeout>();
+  const clearAnimationRef = useRef<string | number>(0);
 
   useEffect(() => {
     setIsAnimating(true);
-    clearAnimationRef.current = setTimeout(() => {
+    clearAnimationRef.current = window.setTimeout(() => {
       setIsAnimating(false);
     }, 1000);
 
     return () => {
-      clearTimeout(clearAnimationRef.current);
+      window.clearTimeout(clearAnimationRef.current);
     };
   }, [collabError.message, collabError.nonce]);
 
