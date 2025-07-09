@@ -35,7 +35,7 @@ Excalidraw Full 已经进化。它不再仅仅是 Excalidraw 的一个简单封�
 
 - **IndexedDB**: 一种快速、安全且可扩展的键值存储。无需任何配置，也无需登录。
 - **后端存储**: 后端可以将画板保存到服务器的存储中（SQLite、文件系统、S3）。可在不同设备间同步。
-- **Cloudflare KV**: 一种快速、安全且可扩展的键值存储。需要设置 Cloudflare Worker 和 DO Spaces。
+- **Cloudflare KV**: 一种快速、安全且可扩展的键值存储。这需要您在自己的 Cloudflare 账户中部署一个配套的 Worker。请参阅 [**Cloudflare Worker 部署指南**](./cloudflare-worker/README.md) 获取详细说明。
 - **Amazon S3**: 一种可靠、可扩展且经济的对象存储服务。
 
 ## 安装与运行

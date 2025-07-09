@@ -35,7 +35,7 @@ The core idea is to let the backend handle user identity while giving you, the u
 
 - **IndexedDB**: A fast, secure, and scalable key-value store. No need to configure anything. Not login required.
 - **Backend Storage**: The backend can save the canvas to the server's storage (SQLite, Filesystem, S3). Synchronized in different devices.
-- **Cloudflare KV**: A fast, secure, and scalable key-value store. Need to setup cloudlfare worker and DO spaces.
+- **Cloudflare KV**: A fast, secure, and scalable key-value store. This requires deploying a companion Worker to your Cloudflare account. See the [**Cloudflare Worker Deployment Guide**](./cloudflare-worker/README.md) for detailed instructions.
 - **Amazon S3**: A reliable, scalable, and inexpensive object storage service. 
 
 ## Installation & Running
